@@ -1,0 +1,22 @@
+[package]
+name = "cabarrus"
+version = "0.1.0"
+authors = ["Sean Gallagher <stgallag@gmail.com>"]
+license = "MIT"
+
+[lib]
+
+[[bin]]
+name = "cb-cooccur"
+description = "Find windowed word cooccurances"
+
+[dependencies]
+nom = "*"
+clap = "~2.21.1"
+ndarray = {version="*", features=["serde"]}
+bincode = "*"
+log = "*"
+env_logger = "*"
+farmhash = "1.1.5"
+hash_hasher = "0.2.0"
+unicode-segmentation = "*"

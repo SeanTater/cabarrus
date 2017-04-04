@@ -9,5 +9,11 @@
 extern crate ndarray;
 extern crate farmhash;
 extern crate hash_hasher;
+extern crate linxal;
+extern crate ndarray_linalg;
+extern crate byteorder;
+extern crate regex;
 pub mod warc;
 pub mod farm;
+pub mod numpy;
+pub mod errors;

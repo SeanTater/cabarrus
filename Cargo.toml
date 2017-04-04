@@ -11,12 +11,23 @@ name = "cb-cooccur"
 description = "Find windowed word cooccurances"
 
 [dependencies]
+# Warc parser
 nom = "*"
+# Argument parser
 clap = "~2.21.1"
+# Numpy like arrays
 ndarray = {version="*", features=["serde"]}
-bincode = "*"
+ndarray-linalg = "*"
+ndarray-rand = "*"
+linxal = "*"
+# Serialization and Deserialization
+byteorder = "*"
+regex = "*"
+# Logging
 log = "*"
 env_logger = "*"
+# Faster hashes
 farmhash = "1.1.5"
 hash_hasher = "0.2.0"
+# Better tokenization (than whitespace)
 unicode-segmentation = "*"

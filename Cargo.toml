@@ -10,6 +10,10 @@ license = "MIT"
 name = "cb-cooccur"
 description = "Find windowed word cooccurances"
 
+[[bin]]
+name = "cb-metrics"
+description = "Measure the quality of a word embedding"
+
 [dependencies]
 # Warc parser
 nom = "*"
@@ -31,3 +35,5 @@ farmhash = "1.1.5"
 hash_hasher = "0.2.0"
 # Better tokenization (than whitespace)
 unicode-segmentation = "*"
+# reading matrices without consuming memory
+memmap = "*"

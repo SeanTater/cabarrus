@@ -16,8 +16,6 @@
 extern crate env_logger;
 // numpy-like arrays
 extern crate ndarray;
-// faster hashmaps
-extern crate farmhash;
 // better segmentation
 extern crate unicode_segmentation;
 // lastly, this library
@@ -44,7 +42,8 @@ pub fn main() {
 pub fn inner_main() -> Result<()> {
     env_logger::init().unwrap();
     let args = app_from_crate!()
-        .args_from_usage("<wordlist> 'file containing words to look for, one per line'")
+        .arg_from_usage("<wordlist> 'file containing words to look for, one per line'")
+        .arg_from_usage("<output> 'file in which to store the resulting cooccurrence matrix'")
         .get_matches();
 
     // Read the word list from a file.
@@ -85,7 +84,7 @@ pub fn inner_main() -> Result<()> {
         println!("Cooccurrences look like {}", cooccurrences);
     }
     
-    numpy::write_matrix("dumpmat", &cooccurrences)?;
+    numpy::write_matrix(args.value_of("output").unwrap(), &cooccurrences)?;
     Ok(())
 }
 

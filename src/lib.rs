@@ -13,6 +13,7 @@ extern crate linxal;
 extern crate ndarray_linalg;
 extern crate byteorder;
 extern crate regex;
+extern crate memmap;
 pub mod warc;
 pub mod farm;
 pub mod numpy;

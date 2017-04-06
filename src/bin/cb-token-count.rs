@@ -29,7 +29,7 @@ pub fn main() {
 pub fn inner_main() -> Result<()> {
     env_logger::init().unwrap();
     
-    let term_count = WarcStreamer::new()?
+    let term_count :usize = WarcStreamer::new()?
         .map(|rec| rec.split_word_bounds().count())
         .sum();
     

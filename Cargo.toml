@@ -8,11 +8,15 @@ license = "MIT"
 
 [[bin]]
 name = "cb-cooccur"
-description = "Find windowed word cooccurances"
+#description = "Find windowed word cooccurances"
 
 [[bin]]
 name = "cb-metrics"
-description = "Measure the quality of a word embedding"
+#description = "Measure the quality of a word embedding"
+
+[[bin]]
+name = "cb-token-count"
+#description = "Count the number of unicode tokens in the text"
 
 [dependencies]
 # Warc parser

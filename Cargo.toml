@@ -18,6 +18,10 @@ name = "cb-metrics"
 name = "cb-token-count"
 #description = "Count the number of unicode tokens in the text"
 
+[[bin]]
+name = "cb-approx-cooccur"
+#description = "Find approximate windowed word cooccurances"
+
 [dependencies]
 # Warc parser
 nom = "*"
@@ -27,6 +31,7 @@ clap = "~2.21.1"
 ndarray = {version="*", features=["serde"]}
 ndarray-linalg = "*"
 ndarray-rand = "*"
+rand = "*"
 linxal = "*"
 openblas-src = "*"
 # Serialization and Deserialization

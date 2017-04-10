@@ -28,6 +28,7 @@ ndarray = {version="*", features=["serde"]}
 ndarray-linalg = "*"
 ndarray-rand = "*"
 linxal = "*"
+openblas-src = "*"
 # Serialization and Deserialization
 byteorder = "*"
 regex = "*"
@@ -41,3 +42,7 @@ hash_hasher = "0.2.0"
 unicode-segmentation = "*"
 # reading matrices without consuming memory
 memmap = "*"
+
+[features]
+default = []
+static = ["openblas-src/static"]

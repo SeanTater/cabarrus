@@ -23,14 +23,16 @@ pub fn inner_main() -> Result<()> {
         .arg_from_usage("<output> 'file in which to store the resulting matrix'")
         .get_matches();
     
-    let mats = args.values_of("addends").unwrap();
+    let mut mats : Vec<&str> = args.values_of("addends").unwrap().collect();
+    mats.sort();
+    
     let size = value_t!(args, "size", usize).unwrap_or_else(|e| e.exit());
     let rank = value_t!(args, "rank", usize).unwrap_or_else(|e| e.exit());
     let chunksize = (mats.len() + size - 1) / size;
     info!("{} files, {} workers, chunks of {}", mats.len(), size, chunksize);
     
     let mut accum = None;
-    for matname in mats.skip(rank*chunksize).take(chunksize) {
+    for matname in mats.into_iter().skip(rank*chunksize).take(chunksize) {
         info!("Reading {}..", matname);
         let ref matfile = cabarrus::numpy::open_matrix_mmap(matname)?;
         let ref mat = cabarrus::numpy::read_matrix_mmap(matfile)?;

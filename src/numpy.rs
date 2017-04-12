@@ -129,6 +129,7 @@ pub fn read_matrix_mmap<'t>(mmap: &'t MatFile) -> Result<ArrayView2<'t, f64>> {
 ///
 /// It seems verbose but you can see this error often so it save you time.
 fn helpful_complaint(p: &Path, header: &[u8]) -> Error {
+    let cap = ::std::cmp::min(header.len(), 100);
     let complaint = format!(
         "Expected {} to be an uncompressed numpy (.npy) file, but couldn't \
         parse the header. The first hundred bytes look like: \n\n{}\n\n\
@@ -138,7 +139,7 @@ fn helpful_complaint(p: &Path, header: &[u8]) -> Error {
         Note: Cabarrus only supports 2D big-endian 64-bit float matrices in C order (for \
         simplicity). You may need to change the dtype accordingly.",
         p.display(),
-        String::from_utf8_lossy(&header[..100]),
-        &header[..100]);
+        String::from_utf8_lossy(&header[..cap]),
+        &header[..cap]);
     Error::Other(complaint)
 }

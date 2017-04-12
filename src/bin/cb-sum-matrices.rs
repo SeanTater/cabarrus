@@ -37,7 +37,7 @@ pub fn inner_main() -> Result<()> {
         {
             let matname = mats[0];
             let ref matfile = cabarrus::numpy::open_matrix_mmap(matname)
-                .expect("Failed to open first matrix");
+                .expect(&format!("Failed to open first matrix, {}", matname));
             let ref mat = cabarrus::numpy::read_matrix_mmap(matfile)
                 .unwrap();
             cabarrus::numpy::write_matrix(outname, mat)

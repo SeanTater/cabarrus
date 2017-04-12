@@ -36,7 +36,7 @@ pub fn inner_main() -> Result<()> {
         let ref matfile = cabarrus::numpy::open_matrix_mmap(matname)?;
         let ref mat = cabarrus::numpy::read_matrix_mmap(matfile)?;
         
-        info!("Reading {} ({} GB) ..", matname, matname.len() >> 27);
+        info!("Reading {} ({} GB) ..", matname, mat.len() >> 27);
         accum = Some(match accum {
             Some(mut acc) => {acc += mat; acc}
             None => mat.to_owned()

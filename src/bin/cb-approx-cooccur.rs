@@ -68,7 +68,7 @@ pub fn inner_main() -> Result<()> {
     // orthogonal vectors representing each word
     // Cooccurrences is an accumulator of those context vectors
     let mut rng = rand::StdRng::from_seed(&[3141592653589793]);
-    let mut contexts: Array2<f64> = Array::random_using([words.len()+ 1 , RANK],
+    let contexts: Array2<f64> = Array::random_using([words.len()+ 1 , RANK],
         Normal::new(0., 1.),
         &mut rng);
     let mut cooccurrences: Array2<f64> = Array2::zeros([words.len() + 1, RANK]);

@@ -6,21 +6,35 @@ license = "MIT"
 
 [lib]
 
-[[bin]]
-name = "cb-cooccur"
-#description = "Find windowed word cooccurances"
-
-[[bin]]
-name = "cb-metrics"
-#description = "Measure the quality of a word embedding"
-
+#
+# Binaries not about CL
+#
 [[bin]]
 name = "cb-token-count"
 #description = "Count the number of unicode tokens in the text"
 
 [[bin]]
+name = "cb-sum-matrices"
+#description = "Sum large matrices using MPI, for speed"
+
+#
+# Metrics
+#
+[[bin]]
+name = "cb-metrics"
+#description = "Measure the quality of a word embedding"
+
+#
+# Examples
+#
+[[bin]]
+name = "cb-cooccur"
+#description = "Find windowed word cooccurances"
+
+[[bin]]
 name = "cb-approx-cooccur"
 #description = "Find approximate windowed word cooccurances"
+
 
 [dependencies]
 # Warc parser

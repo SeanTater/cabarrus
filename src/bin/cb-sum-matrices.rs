@@ -30,22 +30,27 @@ pub fn inner_main() -> Result<()> {
     let rank = value_t!(args, "rank", usize).unwrap_or_else(|e| e.exit());
     let chunksize = (mats.len() + size - 1) / size;
     info!("{} files, {} workers (I'm #{}), chunks of {}", mats.len(), size, rank, chunksize);
+    mats = mats.into_iter().skip(rank*chunksize).take(chunksize).collect();
     
-    let mut accum = None;
-    for matname in mats.into_iter().skip(rank*chunksize).take(chunksize) {
-        let ref matfile = cabarrus::numpy::open_matrix_mmap(matname)?;
-        let ref mat = cabarrus::numpy::read_matrix_mmap(matfile)?;
-        
-        info!("Reading {} ({} GB) ..", matname, mat.len() >> 27);
-        accum = Some(match accum {
-            Some(mut acc) => {acc += mat; acc}
-            None => mat.to_owned()
-        });
-    }
-    if let Some(ref acc) = accum {
-        cabarrus::numpy::write_matrix(args.value_of("output").unwrap(), acc)?;
+    if ! mats.is_empty() {
+        {
+            let matname = mats[0];
+            let ref matfile = cabarrus::numpy::open_matrix_mmap(matname)?;
+            let ref mat = cabarrus::numpy::read_matrix_mmap(matfile)?;
+            cabarrus::numpy::write_matrix(args.value_of("output").unwrap(), mat)
+        }?;
+        let ref accumfile = cabarrus::numpy::open_matrix_mmap(args.value_of("output").unwrap())?;
+        let mut accum = cabarrus::numpy::read_matrix_mmap(accumfile)?;
+
+        for matname in mats {
+            let ref matfile = cabarrus::numpy::open_matrix_mmap(matname)?;
+            let ref mat = cabarrus::numpy::read_matrix_mmap(matfile)?;
+
+            info!("Reading {} ({} GB) ..", matname, mat.len() >> 27);
+            accum += mat;
+        }
     } else {
-        info!("No matrices processed so nothing saved.");
-    }
+            info!("No matrices processed so nothing saved.");
+        }
     Ok(())
 }

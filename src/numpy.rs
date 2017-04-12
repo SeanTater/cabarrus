@@ -108,7 +108,7 @@ pub fn open_matrix_mmap<P: AsRef<Path>>(path: P) -> Result<MatFile> {
     let h = str::from_utf8(&captures[1]).unwrap().parse().unwrap();
     let w = str::from_utf8(&captures[2]).unwrap().parse().unwrap();
     
-    Ok(MatFile(h, w, Mmap::open_with_offset(&reader, Protection::Read, skip, h*w*8)?))
+    Ok(MatFile(h, w, Mmap::open_with_offset(&reader, Protection::ReadWrite, skip, h*w*8)?))
 }
 
 /// Load a Numpy matrix as an mmap (Part 2)
@@ -119,10 +119,10 @@ pub fn open_matrix_mmap<P: AsRef<Path>>(path: P) -> Result<MatFile> {
 ///
 /// This is different than you might expect. The file you read from must outlive the array,
 /// because the array is based on an mmap of that file (so that it doesn't read it into memory).
-pub fn read_matrix_mmap<'t>(mmap: &'t MatFile) -> Result<ArrayView2<'t, f64>> {
+pub fn read_matrix_mmap<'t>(mmap: &'t MatFile) -> Result<ArrayViewMut2<'t, f64>> {
     unsafe {
-        let new_slice= ::std::slice::from_raw_parts(mmap.2.ptr() as *const f64, mmap.2.len()/8);
-        Ok(ArrayView2::from_shape([mmap.0, mmap.1], new_slice)?)
+        let new_slice= ::std::slice::from_raw_parts_mut(mmap.2.ptr() as *mut f64, mmap.2.len()/8);
+        Ok(ArrayViewMut2::from_shape([mmap.0, mmap.1], new_slice)?)
     }
 }
 

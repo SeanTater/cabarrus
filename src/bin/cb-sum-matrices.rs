@@ -22,28 +22,34 @@ pub fn inner_main() -> Result<()> {
         .arg_from_usage("<addends>.. 'files containing matrices to add'")
         .arg_from_usage("<output> 'file in which to store the resulting matrix'")
         .get_matches();
-    
+    let outname = args.value_of("output").unwrap();
     let mut mats : Vec<&str> = args.values_of("addends").unwrap().collect();
     mats.sort();
     
     let size = value_t!(args, "size", usize).unwrap_or_else(|e| e.exit());
     let rank = value_t!(args, "rank", usize).unwrap_or_else(|e| e.exit());
     let chunksize = (mats.len() + size - 1) / size;
-    info!("{} files, {} workers (I'm #{}), chunks of {}", mats.len(), size, rank, chunksize);
     mats = mats.into_iter().skip(rank*chunksize).take(chunksize).collect();
+    info!("{} files, {} workers (I'm #{}), chunks of {} (I get {}), output goes to {}",
+        mats.len(), size, rank, chunksize, mats.len(), outname);
     
     if ! mats.is_empty() {
         {
             let matname = mats[0];
-            let ref matfile = cabarrus::numpy::open_matrix_mmap(matname)?;
-            let ref mat = cabarrus::numpy::read_matrix_mmap(matfile)?;
-            cabarrus::numpy::write_matrix(args.value_of("output").unwrap(), mat)
-        }?;
-        let ref accumfile = cabarrus::numpy::open_matrix_mmap(args.value_of("output").unwrap())?;
+            let ref matfile = cabarrus::numpy::open_matrix_mmap(matname)
+                .expect("Failed to open first matrix");
+            let ref mat = cabarrus::numpy::read_matrix_mmap(matfile)
+                .unwrap();
+            cabarrus::numpy::write_matrix(outname, mat)
+                .expect("Failed to create accumulator matrix file");
+        };
+        let ref accumfile = cabarrus::numpy::open_matrix_mmap(outname)
+            .expect("Failed to reopen accumulator matrix");
         let mut accum = cabarrus::numpy::read_matrix_mmap(accumfile)?;
 
         for matname in mats {
-            let ref matfile = cabarrus::numpy::open_matrix_mmap(matname)?;
+            let ref matfile = cabarrus::numpy::open_matrix_mmap(matname)
+                .expect(&format!("Failed to open matrix {}", matname));
             let ref mat = cabarrus::numpy::read_matrix_mmap(matfile)?;
 
             info!("Reading {} ({} GB) ..", matname, mat.len() >> 27);

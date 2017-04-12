@@ -51,15 +51,14 @@ pub fn write_matrix<S, P>(path: P, arr: &ArrayBase<S, Ix2>) -> Result<()>
 /// need a matrix. Also, this method is fast but only works for native byte order.
 pub fn read_matrix<P: AsRef<Path>>(path: P) -> Result<Array2<f64>> {
     let header_match = Regex::new(r"NUMPY\x01\x00(?s:..)\{'descr': ?'<f8', ?'fortran_order': ?False, ?'shape': ?\((\d+), ?(\d+)\)\} *\n").unwrap();
-    let mut reader = File::open(path)?;
+    let mut reader = File::open(path.as_ref())?;
     let mut content = vec![];
     reader.read_to_end(&mut content)?;
     // The skip and the nested context here is so that we can regex parse (with a borrow)
     // and then reuse the buffer as the array. This way there are never two copies in memory.
     let res: Result<(usize, usize, usize)> = {
         let captures = header_match.captures(&content)
-            .ok_or(Error::Other("Numpy file unrecognized or not supported. \
-                Cabarrus only supports big-endian 64-bit float arrays in C order.".to_string()))?;
+            .ok_or(helpful_complaint(path.as_ref(), &content))?;
         Ok((// where the full match ends
             captures.get(0).unwrap().end(),
             // The shape of the array as described in the metadata
@@ -101,8 +100,7 @@ pub fn open_matrix_mmap<P: AsRef<Path>>(path: P) -> Result<MatFile> {
     // The skip and the nested context here is so that we can regex parse (with a borrow)
     // and then reuse the buffer as the array. This way there are never two copies in memory.
     let captures = header_match.captures(&content)
-        .ok_or(Error::Other("Numpy file unrecognized or not supported. \
-            Cabarrus only supports big-endian 64-bit float arrays in C order.".to_string()))?;
+        .ok_or(helpful_complaint(path.as_ref(), &content))?;
     // where the full match ends
     let skip = captures.get(0).unwrap().end();
     // The shape of the array as described in the metadata
@@ -125,4 +123,22 @@ pub fn read_matrix_mmap<'t>(mmap: &'t MatFile) -> Result<ArrayView2<'t, f64>> {
         let new_slice= ::std::slice::from_raw_parts(mmap.2.ptr() as *const f64, mmap.2.len()/8);
         Ok(ArrayView2::from_shape([mmap.0, mmap.1], new_slice)?)
     }
+}
+
+/// Tell the user more info about the file
+///
+/// It seems verbose but you can see this error often so it save you time.
+fn helpful_complaint(p: &Path, header: &[u8]) -> Error {
+    let complaint = format!(
+        "Expected {} to be an uncompressed numpy (.npy) file, but couldn't \
+        parse the header. The first hundred bytes look like: \n\n{}\n\n\
+        As bytes, the header is as follows: \n\n{:?}\n\n\
+        It should look something like this example, where . are non-printable characters: \
+        NUMPY..{{'descr': '<f8', 'fortran_order': False, 'shape': (34, 27)}}\
+        Note: Cabarrus only supports 2D big-endian 64-bit float matrices in C order (for \
+        simplicity). You may need to change the dtype accordingly.",
+        p.display(),
+        String::from_utf8_lossy(&header[..100]),
+        &header[..100]);
+    Error::Other(complaint)
 }

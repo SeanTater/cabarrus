@@ -2,16 +2,11 @@
 
 // Argument parsing
 #[macro_use] extern crate clap;
-// logging
-#[macro_use] extern crate log;
 extern crate ndarray;
 extern crate env_logger;
 // lastly, this library
 extern crate cabarrus;
 use cabarrus::errors::*;
-use std::cmp::min;
-use ndarray as nd;
-use ndarray::prelude::*;
 
 pub fn main() {
     // Main can't return a Result, and the ? operator needs the enclosing function to return Result
@@ -37,7 +32,7 @@ pub fn inner_main() -> Result<()> {
         let ref mat = cabarrus::numpy::read_matrix_mmap(matfile)?;
         accum = Some(match accum {
             Some(mut acc) => {acc += mat; acc}
-            None => mat * 1.0
+            None => mat.to_owned()
         });
     }
     if let Some(ref acc) = accum {

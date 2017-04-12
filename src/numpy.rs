@@ -95,8 +95,9 @@ pub struct MatFile(usize, usize, Mmap);
 pub fn open_matrix_mmap<P: AsRef<Path>>(path: P) -> Result<MatFile> {
     let header_match = Regex::new(r"NUMPY\x01\x00(?s:..)\{'descr': ?'<f8', ?'fortran_order': ?False, ?'shape': ?\((\d+), ?(\d+)\)\} *\n").unwrap();
     let mut reader = File::open(path.as_ref())?;
-    let mut content = Vec::with_capacity(65536);
-    reader.read_exact(&mut content)?;
+    let mut content = [0u8; 100];
+    let bytes_read = reader.read(&mut content)?;
+    assert!(bytes_read > 0, format!("The numpy file {} seems to be empty.", path.as_ref().display())); 
     // The skip and the nested context here is so that we can regex parse (with a borrow)
     // and then reuse the buffer as the array. This way there are never two copies in memory.
     let captures = header_match.captures(&content)
@@ -132,8 +133,16 @@ fn helpful_complaint(p: &Path, header: &[u8]) -> Error {
     let cap = ::std::cmp::min(header.len(), 100);
     let complaint = format!(
         "Expected {} to be an uncompressed numpy (.npy) file, but couldn't \
-        parse the header. The first hundred bytes look like: \n\n{}\n\n\
-        As bytes, the header is as follows: \n\n{:?}\n\n\
+        parse the header. The first hundred bytes look like:
+        
+        {}
+        
+        
+        As bytes, the header is as follows:
+        
+        {:?}
+        
+        
         It should look something like this example, where . are non-printable characters: \
         NUMPY..{{'descr': '<f8', 'fortran_order': False, 'shape': (34, 27)}}\
         Note: Cabarrus only supports 2D big-endian 64-bit float matrices in C order (for \

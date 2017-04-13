@@ -47,11 +47,13 @@ pub fn inner_main() -> Result<()> {
         let ref accumfile = cabarrus::numpy::open_matrix_mmap(outname)
             .expect("Failed to reopen accumulator matrix");
         let mut accum = cabarrus::numpy::read_matrix_mmap(accumfile)?;
+        let height = accum.shape()[0];
 
         // This is awkward because the matrices are too large for memory..
         // But if accum is an mmap, you waste a *ton* of IO.
         let mut bufline = Array1::zeros([accum.shape()[1]]);
         for matnames in mats[1..].chunks(16) {
+            info!("Working on {:?}", matnames);
             let matfiles : Vec<cabarrus::numpy::MatFile> =
                 matnames.iter()
                 .map(|name| cabarrus::numpy::open_matrix_mmap(name)
@@ -63,7 +65,11 @@ pub fn inner_main() -> Result<()> {
                 .collect();
             
             // The overhead just doesn't matter when the IO is the limit
+            
             for (row_i, mut accum_row) in accum.outer_iter_mut().enumerate() {
+                if row_i % (height / 20) == 0 {
+                    info!("Finished {}%", 100.0 * row_i as f64 / height as f64);
+                }
                 bufline *= 0.0;
                 for mat in mats.iter() {
                     bufline += &mat.row(row_i);
@@ -73,7 +79,7 @@ pub fn inner_main() -> Result<()> {
             //info!("Reading {} ({} GB) ..", matname, mat.len() >> 27);
         }
     } else {
-            info!("No matrices processed so nothing saved.");
-        }
+        info!("No matrices processed so nothing saved.");
+    }
     Ok(())
 }

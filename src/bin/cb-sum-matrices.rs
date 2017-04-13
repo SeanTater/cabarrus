@@ -9,6 +9,7 @@ extern crate env_logger;
 // lastly, this library
 extern crate cabarrus;
 use cabarrus::errors::*;
+use ndarray::prelude::*;
 
 pub fn main() {
     // Main can't return a Result, and the ? operator needs the enclosing function to return Result
@@ -47,13 +48,29 @@ pub fn inner_main() -> Result<()> {
             .expect("Failed to reopen accumulator matrix");
         let mut accum = cabarrus::numpy::read_matrix_mmap(accumfile)?;
 
-        for matname in mats {
-            let ref matfile = cabarrus::numpy::open_matrix_mmap(matname)
-                .expect(&format!("Failed to open matrix {}", matname));
-            let ref mat = cabarrus::numpy::read_matrix_mmap(matfile)?;
-
-            info!("Reading {} ({} GB) ..", matname, mat.len() >> 27);
-            accum += mat;
+        // This is awkward because the matrices are too large for memory..
+        // But if accum is an mmap, you waste a *ton* of IO.
+        let mut bufline = Array1::zeros([accum.shape()[1]]);
+        for matnames in mats[1..].chunks(16) {
+            let matfiles : Vec<cabarrus::numpy::MatFile> =
+                matnames.iter()
+                .map(|name| cabarrus::numpy::open_matrix_mmap(name)
+                    .expect(&format!("Failed to open matrix {}", name)))
+                .collect();
+            let mats : Vec<ArrayViewMut2<f64>> = matfiles.iter()
+                .map(|matfile| cabarrus::numpy::read_matrix_mmap(matfile)
+                    .expect("Failed to read matrix"))
+                .collect();
+            
+            // The overhead just doesn't matter when the IO is the limit
+            for (row_i, mut accum_row) in accum.outer_iter_mut().enumerate() {
+                bufline *= 0.0;
+                for mat in mats.iter() {
+                    bufline += &mat.row(row_i);
+                }
+                accum_row.assign(&bufline);
+            }
+            //info!("Reading {} ({} GB) ..", matname, mat.len() >> 27);
         }
     } else {
             info!("No matrices processed so nothing saved.");

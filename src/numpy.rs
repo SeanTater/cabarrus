@@ -2,7 +2,7 @@
 
 use ndarray::prelude::*;
 use ndarray as nd;
-use std::fs::{OpenOption, File};
+use std::fs::{OpenOptions, File};
 use std::path::Path;
 use std::ptr;
 use std::str;
@@ -94,7 +94,7 @@ pub struct MatFile(usize, usize, Mmap);
 /// This is a two-step process because the Mmap needs to outlive the matrix.
 pub fn open_matrix_mmap<P: AsRef<Path>>(path: P) -> Result<MatFile> {
     let header_match = Regex::new(r"NUMPY\x01\x00(?s:..)\{'descr': ?'<f8', ?'fortran_order': ?False, ?'shape': ?\((\d+), ?(\d+)\)\} *\n").unwrap();
-    let mut reader = OpenOption::new()
+    let mut reader = OpenOptions::new()
         .read(true)
         .write(true)
         .create(true)

@@ -68,6 +68,7 @@ pub fn create_empty_mmap<P: AsRef<Path>>(path: P, shape: &[usize]) -> Result<Mat
         as u16
         )?;
     write!(writer, "{}{}\n", header_nospace, " ".repeat(padding_needed))?;
+    writer.set_len((virtual_len + padding_needed + shape[0] * shape[1] * 8) as u64)?;
     open_matrix_mmap(path)
 }
 

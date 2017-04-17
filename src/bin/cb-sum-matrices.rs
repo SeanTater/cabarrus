@@ -4,7 +4,7 @@
 // logging
 #[macro_use] extern crate log;
 #[macro_use] extern crate clap;
-extern crate ndarray;
+#[macro_use] extern crate ndarray;
 extern crate env_logger;
 // lastly, this library
 extern crate cabarrus;
@@ -47,12 +47,15 @@ pub fn inner_main() -> Result<()> {
         let ref accumfile = cabarrus::numpy::open_matrix_mmap(outname)
             .expect("Failed to reopen accumulator matrix");
         let mut accum = cabarrus::numpy::read_matrix_mmap(accumfile)?;
-        let height = accum.shape()[0];
 
         // This is awkward because the matrices are too large for memory..
-        // But if accum is an mmap, you waste a *ton* of IO.
-        let mut bufline = Array1::zeros([accum.shape()[1]]);
-        for matnames in mats[1..].chunks(16) {
+        // But if accum is an mmap, you waste a *ton* of IO otherwise.
+        // Get chunks of about 1 GB
+        let capacity = std::cmp::max(1, (1 << 27) / accum.len_of(Axis(1)));
+        let mut bufchunk = Array2::zeros([capacity, accum.len_of(Axis(1))]);
+        
+        // 1024 files at a time
+        for matnames in mats[1..].chunks(1024) {
             info!("Working on {:?}", matnames);
             let matfiles : Vec<cabarrus::numpy::MatFile> =
                 matnames.iter()
@@ -65,8 +68,22 @@ pub fn inner_main() -> Result<()> {
                 .collect();
             
             // The overhead just doesn't matter when the IO is the limit
+            let mut row_i = 0 as isize;
+            while row_i < accum.len_of(Axis(0)) as isize {
+                let fill = std::cmp::min(capacity, accum.len_of(Axis(0))) as isize - row_i;
+                
+                bufchunk *= 0.0;
+                let mut buf = bufchunk.slice_mut(s![..fill, ..]);
+                for mat in mats.iter() {
+                    buf += &mat.slice(s![row_i..row_i+fill, ..]);
+                }
+                let mut accum_chunk = accum.slice_mut(s![row_i..row_i+fill, ..]);
+                accum_chunk += &buf;
+                
+                row_i += fill;
+            }
             
-            for (row_i, mut accum_row) in accum.outer_iter_mut().enumerate() {
+           /* for (row_i, mut accum_row) in accum.outer_iter_mut().enumerate() {
                 if row_i % (height / 20) == 0 {
                     info!("Finished {}%", 100.0 * row_i as f64 / height as f64);
                 }
@@ -74,8 +91,9 @@ pub fn inner_main() -> Result<()> {
                 for mat in mats.iter() {
                     bufline += &mat.row(row_i);
                 }
-                accum_row.assign(&bufline);
-            }
+                accum_row += &bufline;
+            }*/
+            
             //info!("Reading {} ({} GB) ..", matname, mat.len() >> 27);
         }
     } else {

@@ -45,6 +45,32 @@ pub fn write_matrix<S, P>(path: P, arr: &ArrayBase<S, Ix2>) -> Result<()>
     Ok(())
 }
 
+/// Create an empty array (for filling with mmap)
+pub fn create_empty_mmap<P: AsRef<Path>>(path: P, shape: &[usize]) -> Result<MatFile> {
+    let header_nospace = format!("{{'descr': '<f8', 'fortran_order': False, 'shape': ({},{})}}",
+        shape[0], shape[1]);
+    let virtual_len =
+        // Calculating how many bytes we have in the header, so we can get alignment
+        header_nospace.len()
+        + 6 // The magic string
+        + 2 // The version number
+        + 2 // An unsigned 2-byte integer for header length
+        + 1 ; // Because there will be a \n added
+    let padding_needed = (((virtual_len + 15) / 16) * 16) - virtual_len; // to get to the next 16
+    
+    // Numpy version 1.0
+    let mut writer = File::create(path.as_ref())?;
+    writer.write_all(b"\x93NUMPY\x01\x00")?;
+    writer.write_u16::<LittleEndian>((header_nospace.len()
+        + padding_needed
+        + 1) // newline
+        // Magic string, version number and 2 bytes for the header length number not included.
+        as u16
+        )?;
+    write!(writer, "{}{}\n", header_nospace, " ".repeat(padding_needed))?;
+    open_matrix_mmap(path)
+}
+
 /// Read a Numpy matrix into memory. Be careful if it's large. You could run out of memory.
 ///
 /// You need to know the number of dimensions at compile time so for convenience, we assume you

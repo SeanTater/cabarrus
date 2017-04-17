@@ -35,18 +35,20 @@ pub fn inner_main() -> Result<()> {
         mats.len(), size, rank, chunksize, mats.len(), outname);
     
     if ! mats.is_empty() {
-        {
+        let accumfile = {
             let matname = mats[0];
             let ref matfile = cabarrus::numpy::open_matrix_mmap(matname)
                 .expect(&format!("Failed to open first matrix, {}", matname));
             let ref mat = cabarrus::numpy::read_matrix_mmap(matfile)
                 .unwrap();
-            cabarrus::numpy::write_matrix(outname, mat)
-                .expect("Failed to create accumulator matrix file");
+            //cabarrus::numpy::write_matrix(outname, mat)
+            //    .expect("Failed to create accumulator matrix file");
+            cabarrus::numpy::create_empty_mmap(outname, mat.shape())
+                .expect("Failed to create accumulator matrix file")
         };
-        let ref accumfile = cabarrus::numpy::open_matrix_mmap(outname)
-            .expect("Failed to reopen accumulator matrix");
-        let mut accum = cabarrus::numpy::read_matrix_mmap(accumfile)?;
+        //let ref accumfile = cabarrus::numpy::open_matrix_mmap(outname)
+        //    .expect("Failed to reopen accumulator matrix");
+        let mut accum = cabarrus::numpy::read_matrix_mmap(&accumfile)?;
 
         // This is awkward because the matrices are too large for memory..
         // But if accum is an mmap, you waste a *ton* of IO otherwise.
@@ -56,7 +58,7 @@ pub fn inner_main() -> Result<()> {
         let capacity = std::cmp::max(1, (1 << 20) / width);
         let mut bufchunk = Array2::zeros([capacity, width]);
         // 1024 files at a time
-        for matnames in mats[1..].chunks(1024) {
+        for matnames in mats.chunks(1024) {
             info!("Working on {:?}", matnames);
             let matfiles : Vec<cabarrus::numpy::MatFile> =
                 matnames.iter()

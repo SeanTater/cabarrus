@@ -50,8 +50,8 @@ pub fn inner_main() -> Result<()> {
 
         // This is awkward because the matrices are too large for memory..
         // But if accum is an mmap, you waste a *ton* of IO otherwise.
-        // Get chunks of about 1 GB
-        let capacity = std::cmp::max(1, (1 << 27) / accum.len_of(Axis(1)));
+        // Get chunks of about 8 MB.
+        let capacity = std::cmp::max(1, (1 << 20) / accum.len_of(Axis(1)));
         let mut bufchunk = Array2::zeros([capacity, accum.len_of(Axis(1))]);
         
         // 1024 files at a time
@@ -70,7 +70,7 @@ pub fn inner_main() -> Result<()> {
             // The overhead just doesn't matter when the IO is the limit
             let mut row_i = 0 as isize;
             while row_i < accum.len_of(Axis(0)) as isize {
-                let fill = std::cmp::min(capacity, accum.len_of(Axis(0))) as isize - row_i;
+                let fill = std::cmp::min(capacity as isize, accum.len_of(Axis(0)) as isize - row_i);
                 
                 bufchunk *= 0.0;
                 let mut buf = bufchunk.slice_mut(s![..fill, ..]);

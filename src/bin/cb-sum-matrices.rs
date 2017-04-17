@@ -51,9 +51,10 @@ pub fn inner_main() -> Result<()> {
         // This is awkward because the matrices are too large for memory..
         // But if accum is an mmap, you waste a *ton* of IO otherwise.
         // Get chunks of about 8 MB.
-        let capacity = std::cmp::max(1, (1 << 20) / accum.len_of(Axis(1)));
-        let mut bufchunk = Array2::zeros([capacity, accum.len_of(Axis(1))]);
-        
+        let width = accum.len_of(Axis(1));
+        let height = accum.len_of(Axis(0));
+        let capacity = std::cmp::max(1, (1 << 20) / width);
+        let mut bufchunk = Array2::zeros([capacity, width]);
         // 1024 files at a time
         for matnames in mats[1..].chunks(1024) {
             info!("Working on {:?}", matnames);
@@ -70,6 +71,7 @@ pub fn inner_main() -> Result<()> {
             // The overhead just doesn't matter when the IO is the limit
             let mut row_i = 0 as isize;
             while row_i < accum.len_of(Axis(0)) as isize {
+                info!("Starting chunk at row {} / {} ({}%)", row_i, height, 100.0 * row_i as f64 / height as f64);
                 let fill = std::cmp::min(capacity as isize, accum.len_of(Axis(0)) as isize - row_i);
                 
                 bufchunk *= 0.0;

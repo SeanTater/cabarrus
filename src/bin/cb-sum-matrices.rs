@@ -54,7 +54,8 @@ pub fn inner_main() -> Result<()> {
         let width = accum.len_of(Axis(1));
         let height = accum.len_of(Axis(0));
         let capacity = std::cmp::max(1, (1 << 20) / width);
-        let mut bufchunk = Array2::zeros([capacity, width]);
+        let new_bufchunk = || Array2::zeros([capacity, width]);
+        let mut bufchunk = new_bufchunk();
         // 1024 files at a time
         for matnames in mats.chunks(1024) {
             info!("Working on {:?}", matnames);
@@ -75,17 +76,22 @@ pub fn inner_main() -> Result<()> {
                 info!("Starting chunk at row {} / {} ({}%) [POW: {}]",
                     row_i,
                     height,
-                    100.0 * row_i as f64 / height as f64, 
-                    // proof of work: reload
-                    mats.par_iter()
-                        .map(|mat| mat.slice(s![row_i..row_i+fill, ..]).scalar_sum())
-                        .sum::<f64>());
+                    100.0 * row_i as f64 / height as f64,
+                    
                 
-                bufchunk *= 0.0;
-                let mut buf = bufchunk.slice_mut(s![..fill, ..]);
-                for mat in mats.iter() {
-                    buf += &mat.slice(s![row_i..row_i+fill, ..]);
-                }
+                //bufchunk *= 0.0;
+                
+//                let mut buf = bufchunk.slice_mut(s![..fill, ..]);
+//                for mat in mats.iter() {
+//                    buf += &mat.slice(s![row_i..row_i+fill, ..]);
+//                }
+//                let mut accum_chunk = accum.slice_mut(s![row_i..row_i+fill, ..]);
+//                accum_chunk += &buf;
+                    
+                    
+                let buf = mats.par_iter()
+                    .map(|mat| mat.slice(s![row_i..row_i+fill, ..]).to_owned())
+                    .reduce(|| Array2::zeros([capacity, fill]), |lmat, rmat| {lmat += &rmat; lmat});
                 let mut accum_chunk = accum.slice_mut(s![row_i..row_i+fill, ..]);
                 accum_chunk += &buf;
                 

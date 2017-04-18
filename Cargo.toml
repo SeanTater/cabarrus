@@ -61,6 +61,8 @@ hash_hasher = "0.2.0"
 unicode-segmentation = "*"
 # reading matrices without consuming memory
 memmap = "*"
+# Threading
+rayon = "*"
 
 [features]
 default = []

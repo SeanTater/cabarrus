@@ -6,6 +6,8 @@
 #[macro_use] extern crate clap;
 #[macro_use] extern crate ndarray;
 extern crate env_logger;
+extern crate rayon;
+use rayon::prelude::*;
 // lastly, this library
 extern crate cabarrus;
 use cabarrus::errors::*;
@@ -41,13 +43,9 @@ pub fn inner_main() -> Result<()> {
                 .expect(&format!("Failed to open first matrix, {}", matname));
             let ref mat = cabarrus::numpy::read_matrix_mmap(matfile)
                 .unwrap();
-            //cabarrus::numpy::write_matrix(outname, mat)
-            //    .expect("Failed to create accumulator matrix file");
             cabarrus::numpy::create_empty_mmap(outname, mat.shape())
                 .expect("Failed to create accumulator matrix file")
         };
-        //let ref accumfile = cabarrus::numpy::open_matrix_mmap(outname)
-        //    .expect("Failed to reopen accumulator matrix");
         let mut accum = cabarrus::numpy::read_matrix_mmap(&accumfile)?;
 
         // This is awkward because the matrices are too large for memory..
@@ -73,8 +71,15 @@ pub fn inner_main() -> Result<()> {
             // The overhead just doesn't matter when the IO is the limit
             let mut row_i = 0 as isize;
             while row_i < accum.len_of(Axis(0)) as isize {
-                info!("Starting chunk at row {} / {} ({}%)", row_i, height, 100.0 * row_i as f64 / height as f64);
                 let fill = std::cmp::min(capacity as isize, accum.len_of(Axis(0)) as isize - row_i);
+                info!("Starting chunk at row {} / {} ({}%) [POW: {}]",
+                    row_i,
+                    height,
+                    100.0 * row_i as f64 / height as f64, 
+                    // proof of work: reload
+                    mats.par_iter()
+                        .map(|mat| mat.slice(s![row_i..row_i+fill, ..]).scalar_sum())
+                        .sum::<f64>());
                 
                 bufchunk *= 0.0;
                 let mut buf = bufchunk.slice_mut(s![..fill, ..]);
@@ -86,19 +91,6 @@ pub fn inner_main() -> Result<()> {
                 
                 row_i += fill;
             }
-            
-           /* for (row_i, mut accum_row) in accum.outer_iter_mut().enumerate() {
-                if row_i % (height / 20) == 0 {
-                    info!("Finished {}%", 100.0 * row_i as f64 / height as f64);
-                }
-                bufline *= 0.0;
-                for mat in mats.iter() {
-                    bufline += &mat.row(row_i);
-                }
-                accum_row += &bufline;
-            }*/
-            
-            //info!("Reading {} ({} GB) ..", matname, mat.len() >> 27);
         }
     } else {
         info!("No matrices processed so nothing saved.");

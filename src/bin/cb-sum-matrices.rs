@@ -54,8 +54,7 @@ pub fn inner_main() -> Result<()> {
         let width = accum.len_of(Axis(1));
         let height = accum.len_of(Axis(0));
         let capacity = std::cmp::max(1, (1 << 20) / width);
-        let new_bufchunk = || Array2::zeros([capacity, width]);
-        let mut bufchunk = new_bufchunk();
+        //let mut bufchunk = Array2::zeros([capacity, width]);;
         // 1024 files at a time
         for matnames in mats.chunks(1024) {
             info!("Working on {:?}", matnames);
@@ -73,10 +72,10 @@ pub fn inner_main() -> Result<()> {
             let mut row_i = 0 as isize;
             while row_i < accum.len_of(Axis(0)) as isize {
                 let fill = std::cmp::min(capacity as isize, accum.len_of(Axis(0)) as isize - row_i);
-                info!("Starting chunk at row {} / {} ({}%) [POW: {}]",
+                info!("Starting chunk at row {} / {} ({}%)",
                     row_i,
                     height,
-                    100.0 * row_i as f64 / height as f64,
+                    100.0 * row_i as f64 / height as f64);
                     
                 
                 //bufchunk *= 0.0;
@@ -91,7 +90,7 @@ pub fn inner_main() -> Result<()> {
                     
                 let buf = mats.par_iter()
                     .map(|mat| mat.slice(s![row_i..row_i+fill, ..]).to_owned())
-                    .reduce(|| Array2::zeros([capacity, fill]), |lmat, rmat| {lmat += &rmat; lmat});
+                    .reduce(|| Array2::zeros::<[usize;2]>([capacity, fill as usize]), |mut lmat, rmat| {lmat += &rmat; lmat});
                 let mut accum_chunk = accum.slice_mut(s![row_i..row_i+fill, ..]);
                 accum_chunk += &buf;
                 

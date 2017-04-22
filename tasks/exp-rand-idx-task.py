@@ -43,30 +43,30 @@ for apname, apfn in approaches                  # 7
 
 
 start_jobid = os.getenv("PBS_ARRAYID")
-for jobid in range(start_jobid, start_jobid+10): 
-print("# apname apfn nname nfn fill_exp factors_exp")
-print("#" + str(jobs[int(jobid)]))
-(apname, apfn, nname, nfn, fill_exp, factors_exp) = jobs[int(jobid)]
+for jobid in range(start_jobid, start_jobid+10):
+    print("# apname apfn nname nfn fill_exp factors_exp")
+    print("#" + str(jobs[int(jobid)]))
+    (apname, apfn, nname, nfn, fill_exp, factors_exp) = jobs[int(jobid)]
 
-fill = 0.001 * (1<<fill_exp)
-factors = 1<<factors_exp
-rmses = []
-for iteration in range(10):        # 10
-    contexts = nfn(apfn(factors))
+    fill = 0.001 * (1<<fill_exp)
+    factors = 1<<factors_exp
+    rmses = []
+    for iteration in range(10):        # 10
+        contexts = nfn(apfn(factors))
 
-    # This is a binary field. Check more distributions.
-    corefs = 1.0 * (unif(0.0, 1.0, (vocab, vocab)) < fill)
-    #import code
-    #code.interact(local=vars())
-    transformed = corefs.T.dot(contexts)
-    reconstructed = transformed.dot(contexts.T).T
+        # This is a binary field. Check more distributions.
+        corefs = 1.0 * (unif(0.0, 1.0, (vocab, vocab)) < fill)
+        #import code
+        #code.interact(local=vars())
+        transformed = corefs.T.dot(contexts)
+        reconstructed = transformed.dot(contexts.T).T
 
-    corefs /= corefs.sum()
-    reconstructed /= reconstructed.sum()
+        corefs /= corefs.sum()
+        reconstructed /= reconstructed.sum()
 
-    corefs -= reconstructed
-    np.abs(corefs, corefs)
+        corefs -= reconstructed
+        np.abs(corefs, corefs)
 
-    rmses.append(corefs.sum() / (vocab*vocab*fill))
-rmses = np.array(rmses)
-print(",".join(str(x) for x in [apname, nname, fill, factors, rmses.mean(), np.std(rmses)]) )
+        rmses.append(corefs.sum() / (vocab*vocab*fill))
+    rmses = np.array(rmses)
+    print(",".join(str(x) for x in [apname, nname, fill, factors, rmses.mean(), np.std(rmses)]) )

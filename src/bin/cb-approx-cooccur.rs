@@ -48,6 +48,7 @@ pub fn main() {
 pub fn inner_main() -> Result<()> {
     env_logger::init().unwrap();
     let args = app_from_crate!()
+        .arg_from_usage("--context 'get the random (but consistent) context vectors instead of counting")
         .arg_from_usage("<wordlist> 'file containing words to look for, one per line'")
         .arg_from_usage("<output> 'file in which to store the resulting cooccurrence matrix'")
         .get_matches();
@@ -68,33 +69,40 @@ pub fn inner_main() -> Result<()> {
     // orthogonal vectors representing each word
     // Cooccurrences is an accumulator of those context vectors
     let mut rng = rand::StdRng::from_seed(&[3141592653589793]);
-    let contexts: Array2<f64> = Array::random_using([words.len()+ 1 , RANK],
+    let contexts: Array2<f64> = Array::random_using([words.len()+ 1, RANK],
         Normal::new(0., 1.),
         &mut rng);
     let mut cooccurrences: Array2<f64> = Array2::zeros([words.len() + 1, RANK]);
-
-    if words.len() < 25 {
-        info!("Collecting cooccurrences (with one another) of: {:?}", words);
-    } else {
-        info!("Collecting cooccurrences (with one another) of {} words.", words.len());
-    }
     
-    for rec in WarcStreamer::new()? {
-        let mention_ids = tokenize(&rec, &word_ids);
-        for mention_i in 0..mention_ids.len() {
-            for context_i in mention_i..min(mention_ids.len(), WINDOW_WIDTH) {
-                cooccurrences
-                .row_mut(mention_ids[mention_i]) // row: center word
-                .scaled_add(1.0, // uniform window weight
-                    &contexts.row(mention_ids[context_i])); // column: context word;
+    if args.is_present("context") {
+        // Just dump the contexts (not the usual way you'd use this program)
+        numpy::write_matrix(args.value_of("output").unwrap(), &contexts)?;
+    } else {
+        // The usual case: count the words' cooccurrences
+        if words.len() < 25 {
+            info!("Collecting cooccurrences (with one another) of: {:?}", words);
+        } else {
+            info!("Collecting cooccurrences (with one another) of {} words.", words.len());
+        }
+
+        for rec in WarcStreamer::new()? {
+            let mention_ids = tokenize(&rec, &word_ids);
+            for mention_i in 0..mention_ids.len() {
+                for context_i in mention_i..min(mention_ids.len(), WINDOW_WIDTH) {
+                    cooccurrences
+                    .row_mut(mention_ids[mention_i]) // row: center word
+                    .scaled_add(1.0, // uniform window weight
+                        &contexts.row(mention_ids[context_i])); // column: context word;
+                }
             }
         }
+        if words.len() <= 10 {
+            println!("Cooccurrences look like {}", cooccurrences);
+        }
+
+        numpy::write_matrix(args.value_of("output").unwrap(), &cooccurrences)?;
     }
-    if words.len() <= 10 {
-        println!("Cooccurrences look like {}", cooccurrences);
-    }
-    
-    numpy::write_matrix(args.value_of("output").unwrap(), &cooccurrences)?;
+
     Ok(())
 }
 

@@ -42,11 +42,11 @@ for apname, apfn in approaches                  # 7
 ]
 
 
-start_jobid = os.getenv("PBS_ARRAYID")
+start_jobid = int(os.getenv("PBS_ARRAYID"))
 for jobid in range(start_jobid, start_jobid+10):
     print("# apname apfn nname nfn fill_exp factors_exp")
-    print("#" + str(jobs[int(jobid)]))
-    (apname, apfn, nname, nfn, fill_exp, factors_exp) = jobs[int(jobid)]
+    print("#" + str(jobs[jobid]))
+    (apname, apfn, nname, nfn, fill_exp, factors_exp) = jobs[jobid]
 
     fill = 0.001 * (1<<fill_exp)
     factors = 1<<factors_exp

@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import numpy as np
 import scipy as sp
 import scipy.linalg
@@ -41,8 +42,8 @@ for apname, apfn in approaches                  # 7
 ]
 
 
-jobid = os.getenv("PBS_ARRAYID")
-
+start_jobid = os.getenv("PBS_ARRAYID")
+for jobid in range(start_jobid, start_jobid+10): 
 print("# apname apfn nname nfn fill_exp factors_exp")
 print("#" + str(jobs[int(jobid)]))
 (apname, apfn, nname, nfn, fill_exp, factors_exp) = jobs[int(jobid)]
@@ -68,4 +69,4 @@ for iteration in range(10):        # 10
 
     rmses.append(corefs.sum() / (vocab*vocab*fill))
 rmses = np.array(rmses)
-print(",".join([apname, nname, fill, factors, rmses.mean(), np.std(rmses)]) )
+print(",".join(str(x) for x in [apname, nname, fill, factors, rmses.mean(), np.std(rmses)]) )

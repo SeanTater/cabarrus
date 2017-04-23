@@ -55,7 +55,8 @@ for jobid in range(start_jobid, start_jobid+10):
         contexts = nfn(apfn(factors))
 
         # This is a binary field. Check more distributions.
-        corefs = 1.0 * (unif(0.0, 1.0, (vocab, vocab)) < fill)
+        #corefs = 1.0 * (unif(0.0, 1.0, (vocab, vocab)) < fill)
+        corefs = np.random.pareto(0.25, (vocab, vocab))
         #import code
         #code.interact(local=vars())
         transformed = corefs.T.dot(contexts)
